@@ -1,4 +1,4 @@
-module AMQP
+module Lbunny
   class Client
     attr_reader :exchange, :channel
 
