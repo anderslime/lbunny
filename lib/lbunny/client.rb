@@ -17,7 +17,7 @@ module Lbunny
       exchange.publish(msg, options)
     end
 
-    def subscribe(queue, routing_key, sub_options, &block)
+    def subscribe(queue, routing_key, sub_options = {}, &block)
       reconnect! if exchange.nil?
       fail 'No active channel' if channel.nil?
 
