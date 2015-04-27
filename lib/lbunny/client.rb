@@ -1,18 +1,20 @@
 module Lbunny
   class Client
-    attr_reader :exchange, :channel
+    attr_reader :exchange, :channel, :err_block
 
-    def initialize(url)
+    def initialize(url, &err_block)
       @url = url
       @exchange = nil
+      @err_block = err_block
     end
 
     def publish(msg, options)
       reconnect! if exchange.nil?
       exchange.publish(msg, options)
     rescue Bunny::TCPConnectionFailed => e
-      # If disconnected, airbrake, reconnect and retry once
-      Airbrake.notify(e)
+      err_block.call(e) if err_block
+
+      # If disconnected, reconnect and retry once
       reconnect!
       exchange.publish(msg, options)
     end
@@ -38,7 +40,7 @@ module Lbunny
       @channel  = conn.create_channel
       @exchange = channel.topic('lb', auto_delete: false, durable: true)
     rescue Bunny::TCPConnectionFailed => e
-      Airbrake.notify(e)
+      err_block.call(e) if err_block
       close!
     end
 

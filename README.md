@@ -25,7 +25,7 @@ brew install rabbitmq
 # Initialize with url to RabbitMQ
 rabbit_url = "amqp://guest:guest@localhost:5672"
 
-client = Lbunny::Client.new(rabbbit_url)
+client = Lbunny::Client.new(rabbbit_url) { |error| puts error }
 
 # Setup a blocking subscriber
 routing_key = nil
