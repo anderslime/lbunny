@@ -11,12 +11,12 @@ module Lbunny
     def publish(msg, options)
       reconnect! if exchange.nil?
       exchange.publish(msg, options)
-    rescue Bunny::TCPConnectionFailed => e
-      err_block.call(e) if err_block
-
-      # If disconnected, reconnect and retry once
-      reconnect!
-      exchange.publish(msg, options)
+    rescue => e
+      handle_error(e) do
+        # If disconnected, reconnect and retry once
+        reconnect!
+        exchange.publish(msg, options)
+      end
     end
 
     def subscribe(queue, routing_key, sub_options = {}, &block)
@@ -26,12 +26,16 @@ module Lbunny
       channel.queue(queue)
              .bind(exchange, routing_key: routing_key)
              .subscribe(sub_options, &block)
+    rescue => e
+      handle_error(e)
     end
 
     def close!
       channel.close unless channel.nil?
       @channel = nil
       @exchange = nil
+    rescue => e
+      handle_error(e)
     end
 
     private
@@ -39,14 +43,25 @@ module Lbunny
     def reconnect!
       @channel  = conn.create_channel
       @exchange = channel.topic('lb', auto_delete: false, durable: true)
-    rescue Bunny::TCPConnectionFailed => e
-      err_block.call(e) if err_block
-      close!
+    rescue => e
+      handle_error(e) do
+        close!
+      end
     end
 
     def conn
       @conn ||= Bunny.new(@url).tap do |connection|
         connection.start
+      end
+    end
+
+    def handle_error(e, &other)
+      err_block.call(e) if err_block
+
+      if other
+        other.call
+      else
+        raise e
       end
     end
   end
