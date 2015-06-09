@@ -1,10 +1,11 @@
 module Lbunny
   class Client
-    attr_reader :exchange, :channel, :err_block
+    attr_reader :exchange, :channel, :err_block, :options
 
-    def initialize(url, &err_block)
+    def initialize(url, options = default_options, &err_block)
       @url = url
       @exchange = nil
+      @options = options
       @err_block = err_block
     end
 
@@ -38,16 +39,17 @@ module Lbunny
       handle_error(e)
     end
 
-    private
-
     def reconnect!
       @channel  = conn.create_channel
+      @channel.prefetch(options[:prefetch_count]) if options[:prefetch_count]
       @exchange = channel.topic('lb', auto_delete: false, durable: true)
     rescue => e
       handle_error(e) do
         close!
       end
     end
+
+    private
 
     def conn
       @conn ||= Bunny.new(@url).tap do |connection|
@@ -63,6 +65,12 @@ module Lbunny
       else
         raise e
       end
+    end
+
+    def default_options
+      {
+        prefetch_count: 10
+      }
     end
   end
 end
