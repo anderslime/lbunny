@@ -39,8 +39,6 @@ module Lbunny
       handle_error(e)
     end
 
-    private
-
     def reconnect!
       @channel  = conn.create_channel
       @channel.prefetch(options[:prefetch_count]) if options[:prefetch_count]
@@ -50,6 +48,8 @@ module Lbunny
         close!
       end
     end
+
+    private
 
     def conn
       @conn ||= Bunny.new(@url).tap do |connection|
