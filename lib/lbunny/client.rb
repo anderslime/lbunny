@@ -10,7 +10,7 @@ module Lbunny
     end
 
     def publish(msg, options)
-      reconnect! if exchange.nil?
+      reconnect! unless alive?
       exchange.publish(msg, options)
     rescue => e
       handle_error(e) do
@@ -21,7 +21,7 @@ module Lbunny
     end
 
     def subscribe(queue, routing_key, sub_options = {}, &block)
-      reconnect! if exchange.nil?
+      reconnect! unless alive?
       fail 'No active channel' if channel.nil?
 
       channel.queue(queue)
@@ -32,7 +32,7 @@ module Lbunny
     end
 
     def close!
-      channel.close unless channel.nil?
+      channel.close if alive?
       @channel = nil
       @exchange = nil
     rescue => e
@@ -47,6 +47,12 @@ module Lbunny
       handle_error(e) do
         close!
       end
+    end
+
+    def alive?
+      return false if exchange.nil?
+      return false if channel.nil?
+      channel.open?
     end
 
     private
