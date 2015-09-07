@@ -58,7 +58,7 @@ module Lbunny
     private
 
     def conn
-      @conn ||= Bunny.new(@url).tap do |connection|
+      @conn ||= Bunny.new(@url, heartbeat: :server).tap do |connection|
         connection.start
       end
     end
